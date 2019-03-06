@@ -1,6 +1,6 @@
 {
   "name": "async-status-logger",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Allows for asynchronous status logging to stdout in a way that works with other logging",
   "main": "index.js",
   "scripts": {
