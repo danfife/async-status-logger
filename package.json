@@ -4,7 +4,9 @@
   "description": "Allows for asynchronous status logging to stdout in a way that works with other logging",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "lint": "eslint index.js src/*.js",
+    "pretest": "npm run lint",
+    "test": "mocha ./tests/**.test.js"
   },
   "repository": {
     "type": "git",
@@ -25,5 +27,12 @@
   "homepage": "https://github.com/danfife/async-status-logger#README.md",
   "dependencies": {
     "winston": "^3.2.1"
+  },
+  "devDependencies": {
+    "assume": "^2.1.0",
+    "eslint": "^5.15.1",
+    "mocha": "^6.0.2",
+    "nyc": "^13.3.0",
+    "std-mocks": "^1.0.1"
   }
 }
