@@ -10,6 +10,13 @@
     "type": "git",
     "url": "git+https://github.com/danfife/async-status-logger.git"
   },
+  "keywords": [
+    "status",
+    "log",
+    "logger",
+    "async",
+    "dynamic"
+  ],
   "author": "daniel.fife@gmail.com",
   "license": "MIT",
   "bugs": {
