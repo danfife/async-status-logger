@@ -23,7 +23,7 @@ log.info('Starting up client')
 // You can also log status-type messages
 client.init({
   handleStateChange: function(state) {
-    if (state === 'DONE') {
+    if (state !== 'DONE') {
     	log.status('client', `Client state currently in "${state}"`)	
     } else {
     	// This will remove the line from the console
