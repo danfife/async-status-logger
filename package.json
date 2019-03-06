@@ -1,0 +1,22 @@
+{
+  "name": "async-status-logger",
+  "version": "1.0.0",
+  "description": "Allows for asynchronous status logging to stdout in a way that works with other logging",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/danfife/async-status-logger.git"
+  },
+  "author": "daniel.fife@gmail.com",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/danfife/async-status-logger/issues"
+  },
+  "homepage": "https://github.com/danfife/async-status-logger#README.md",
+  "dependencies": {
+    "winston": "^3.2.1"
+  }
+}
