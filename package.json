@@ -30,12 +30,9 @@
     "winston": "^3.2.1"
   },
   "devDependencies": {
-    "assume": "^2.1.0",
     "eslint": "^5.15.1",
     "mocha": "^6.0.2",
-    "nyc": "^13.3.0",
     "sinon": "^7.2.7",
-    "std-mocks": "^1.0.1",
-    "timekeeper": "^2.1.2"
+    "std-mocks": "^1.0.1"
   }
 }
