@@ -38,12 +38,20 @@ log.info('Starting up another client')
 
 ### Creation
 
-#### asyncStatusLogger(``...objects``)
+#### asyncStatusLogger(``objects``, ``options``)
+- ``objects`` An object (such as your custom logger) or an array ofobjects to include as part of your proxied logger
+- ``options`` _(Optional)_ The status logger options
+  - ``color`` The color to set status messages to. Uses [chalk](https://www.npmjs.com/package/chalk) package under the hood, so check there for valid colors and styles. Set to null or an empty string to disable default coloring.
+  - ``messageFormatter({message, payload, time})`` Allows you to override how the message is formatted. Provides an object containing the message, payload (if specified), and time in milliseconds 
+
 Returns a Proxy object that will forward methods to their respective
 objects. If conflicting methods, status logger method's take priority,
-and then priority is determined based on the objects order.
+afterwhich priority is determined based on the order of the objects array.
+
 ``` js
-asyncStatusLogger(logger1, logger2)
+asyncStatusLogger(logger1)  // single object
+asyncStatusLogger([logger1, logger2])  // or array of objects
+asyncStatusLogger(logger1, {color: null})  // Configured without any coloring
 ```
 
 ### Status logger methods
@@ -96,15 +104,45 @@ log.statusEnd('some-unique-id', 'First status now complete', log.debug)
 // > 2019-03-05T02:10:57.845Z - debug: First status now complete (3 minutes 42 seconds)
 ```
 
-#### log.setStatusColor(color)
-Set color for status messages. Uses winston colorize under the hood which uses the [colors](https://www.npmjs.com/package/colors) package. Check there to see which colors and styles are supported.
+#### log.custom(``methodName``, ``createPromise(...args)``)
+- ``methodName`` The custom method name to add to the proxy.
+- ``createPromise(...)`` the method that will be called from the custom method created. Whatever arguments are provided will be forwarded to this method. It is expected that this method returns a promise
+ 
+Allows you to create custom methods that interact with the console asynchronously. You provide the
+custom method name and a function that creates a promise, and any pending status messages will be hidden until the promise is completed.
 
+For example, say you want to use the package [prompts](https://github.com/terkelg/prompts) to prompt the user while potentially having a pending status. This could cause conflicts to how either are displayed in the console. You can resolve this like so:
 ``` js
-log.setStatusColor('italic red')
+const createStatusLogger = require('async-status-logger')
+const prompts = require('prompts')
+
+const log = createStatusLogger()
+log.custom('prompt', prompts)
+log.prompt({
+    type: 'confirm',
+    name: 'value',
+    message: 'Do you really want to answer questions asynchronously?'
+}).then(answer => {
+  log.info(`You said ${answer ? 'yes' : 'no'}`)
+})
 ```
 
-#### log.getStatusColor(color)
-Simple getter of current status color
+#### log.statusWaitUntil(``createPromiseFn``, ``...args``)
+- ``createPromiseFn`` A function that does (or might) write to output. It will be called safely to work with any pending status logs. If a promise is returned, status messages will be suppressed until the promise is resolved
+- ``...args`` The args to forward to the ``createPromiseFn``
+
+Another way to solve the problem described in _log.custom_ is as follows:
+``` js
+// ...setup
+log.statusWaitUntil(prompts, {
+    type: 'confirm',
+    name: 'value',
+    message: 'Do you like chocolate?'
+}).then(answer => {
+    log.info(`The answer is ${answer.value}`)
+})
+```
+
 
 ## Installation
 

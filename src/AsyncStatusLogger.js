@@ -1,27 +1,46 @@
 'use strict;'
 
+const chalk = require('chalk')
 const winston= require('winston')
 const {formatMessage, singleKeyObject, uid} = require('./utils')
 
 const DEFAULT_COLOR = 'bold blue'
+const FORMATTER_KEYS = ['message', 'time', 'payload']
+const NOOP = v => v
+
+function colorToChalk(color) {
+    if (!color) return NOOP
+
+    const values = color.split(/\s+/)
+    let method = chalk
+    values.forEach(value => {
+        if (method[value]) method = method[value]
+    })
+    return method === chalk ? NOOP : method
+}
+
+function pick(obj, keys) {
+    const result = {}
+    keys.forEach(key => {
+        if (obj.hasOwnProperty(key)) result[key] = obj[key]
+    })
+    return result
+}
 
 function createLogger(level, printMessage) {
     return winston.createLogger({
         level: level,
         levels: singleKeyObject(level, 0),
-        transports: [
-            new winston.transports.Console({
-                format: winston.format.combine(
-                    winston.format.colorize({all: true}),
-                    winston.format.printf(printMessage)
-                )
-            })
-        ]
+        transports: [new winston.transports.Console({
+            format: winston.format.printf(printMessage)
+        })]
     })
 }
 
 class AsyncStatusLogger {
     constructor({messageFormatter = formatMessage, color = DEFAULT_COLOR} = {}) {
+        const toColor = colorToChalk(color)
+
         const self = this
         this._names = []
         this._state = []
@@ -33,11 +52,10 @@ class AsyncStatusLogger {
         this._level = uid('_asyncStatusLoggerLevel_')
         this._messageFormatter = messageFormatter
         this._logger = createLogger(this._level, data => {
-            const response = self._messageFormatter(data)
-            self._lineCount += response.split("\n").length
-            return response
+            const response = self._messageFormatter(pick(data, FORMATTER_KEYS))
+            self._lineCount += response.split("\n").length            
+            return toColor(response)
         })
-        this.setStatusColor(color)
     }
 
     _pause() {
@@ -52,7 +70,7 @@ class AsyncStatusLogger {
     }
 
     _playCallbacks() {
-        if (this._pasued) return
+        if (this._paused) return
         while(this._callbacks.length) {
             const callback = this._callbacks.shift()
             callback.apply(this)
@@ -114,12 +132,22 @@ class AsyncStatusLogger {
             const callback = args.pop()
             const state = this._state[name]
             const message = args.length ? args[0] : state.message
-            const payload = args.length > 1 ? args[1] : state.payload
             const time = this._now - state.start
+            
             const finalMessage = this._messageFormatter({ message, time })
-            this._callbacks.push(() => callback(finalMessage, payload))
+            const callbackArgs = [finalMessage]
+            const payload = args.length > 1 ? args[1] : state.payload
+            if (payload) callbackArgs.push(payload)
+            
+            this._callbacks.push(() => callback(...callbackArgs))
             this._playCallbacks()        
         }
+    }
+
+    statusEndAll() {
+        this._names = []
+        clearInterval(this._interval)
+        this._clearStatus()
     }
 
     statusWaitUntil(run, ...args) {
@@ -140,15 +168,6 @@ class AsyncStatusLogger {
         this._resume()
         return response
     }
-
-    getStatusColor() { 
-        return this._color
-    }
-    
-    setStatusColor(color) {
-        this._color = color
-        winston.addColors(singleKeyObject(this._level, this._color))
-    }    
 }
 
 module.exports = AsyncStatusLogger
