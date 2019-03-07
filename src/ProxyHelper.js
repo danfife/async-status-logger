@@ -30,6 +30,7 @@ class ProxyHelper {
 
     add(...objects) {
         this._consumed.push(...objects)
+        return this._proxy
     }
 
     custom(methodName, create) {
@@ -37,6 +38,7 @@ class ProxyHelper {
         this._customMethods[methodName] = (...args) => {
             return statusLogger.statusWaitUntil(() => create.apply(null, args))
         }
+        return this._proxy
     }
 
     proxy() {
