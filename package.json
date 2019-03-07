@@ -1,6 +1,6 @@
 {
   "name": "async-status-logger",
-  "version": "1.0.6",
+  "version": "2.0.0",
   "description": "Allows for asynchronous status logging to stdout in a way that works with other logging",
   "main": "index.js",
   "scripts": {
@@ -26,8 +26,7 @@
   },
   "homepage": "https://github.com/danfife/async-status-logger#README.md",
   "dependencies": {
-    "chalk": "^2.4.2",
-    "winston": "^3.2.1"
+    "chalk": "^2.4.2"
   },
   "devDependencies": {
     "eslint": "^5.15.1",

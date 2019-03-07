@@ -1,5 +1,5 @@
 const assert = require('assert')
-const {formatTime, formatMessage, singleKeyObject, uid} = require('../src/utils')
+const {formatTime, formatMessage} = require('../src/utils')
 
 describe('utils', () => {
     describe('formatTime', () => {
@@ -25,30 +25,9 @@ describe('utils', () => {
             const time = 1000 * 59
             const payload = {payload: true}
 
-            assert.equal(formatMessage({message}), 'TEST_MESSAGE')
-            assert.equal(formatMessage({message, time}), 'TEST_MESSAGE (59 seconds)')
-            assert.equal(formatMessage({message, time, payload}), "TEST_MESSAGE (59 seconds) {\n  \"payload\": true\n}")
-        })
-    })
-
-    describe('singleKeyObject', () => {
-        it('should create an object with the key value pair', () => {
-            const obj = singleKeyObject('test key', 'test value')
-            assert.deepEqual(Object.keys(obj), ['test key'])
-            assert.deepEqual(Object.values(obj), ['test value'])
-        })
-    })
-
-    describe('uid', () => {
-        it('should create a unique id', () => {
-            assert.equal(uid(), '1')
-            assert.equal(uid(), '2')
-            assert.equal(uid('test_a_'), 'test_a_1')
-            assert.equal(uid('test_a_'), 'test_a_2')
-            assert.equal(uid('test_b_'), 'test_b_1')
-            assert.equal(uid(), '3')
-            assert.equal(uid('test_a_'), 'test_a_3')
-            assert.equal(uid('test_b_'), 'test_b_2')
+            assert.equal(formatMessage([message]), 'TEST_MESSAGE')
+            assert.equal(formatMessage([message], time), 'TEST_MESSAGE (59 seconds)')
+            assert.equal(formatMessage([message, payload], time), "TEST_MESSAGE (59 seconds) {\n  \"payload\": true\n}")
         })
     })
 })

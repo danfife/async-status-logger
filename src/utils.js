@@ -1,3 +1,7 @@
+const chalk = require('chalk')
+
+const NOOP = v => v
+
 function formatTime(time) {
     const totalSeconds = Math.floor(time / 1000)
     const seconds = totalSeconds % 60
@@ -12,27 +16,36 @@ function formatTime(time) {
     return parts.join(', ')
 }
 
-function formatMessage({message, payload, time}) {
-    let parts = [message]
-    if (time) parts.push(`(${formatTime(time)})`)
-    if (payload) parts.push(JSON.stringify(payload, null, 2))
-    return parts.join(" ")
+function formatMessage(args, time, separator = ' ') {
+    let hasAddedTime = false
+
+    const parts = []
+    args.forEach((part, i) => {
+        const isObject = typeof part === 'object'
+        const isLast = i + 1 === args.length
+
+        if (!isObject) parts.push(part)
+        if (!hasAddedTime && time && (isLast || isObject)) {
+            parts.push(`(${formatTime(time)})`)
+            hasAddedTime = true
+        }
+        if (isObject) parts.push(JSON.stringify(part, null, 2))
+    })
+
+    return parts.join(separator)
 }
 
-function singleKeyObject(key, value) {
-    const obj = {}
-    obj[key] = value
-    return obj
-}
+function colorStrToChalkObj(color) {
+    if (!color) return NOOP
 
-const uids = {_default: 0}
-function uid(namespace = null) {
-    if (!namespace) return `${++uids._default}`
-    uids[namespace] = (uids[namespace] || 0) + 1
-    return `${namespace}${uids[namespace]}`
+    const values = color.split(/\s+/)
+    let method = chalk
+    values.forEach(value => {
+        if (method[value]) method = method[value]
+    })
+    return method === chalk ? NOOP : method
 }
 
 exports.formatTime = formatTime
 exports.formatMessage = formatMessage
-exports.singleKeyObject = singleKeyObject
-exports.uid = uid
+exports.colorStrToChalkObj = colorStrToChalkObj

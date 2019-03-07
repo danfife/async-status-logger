@@ -84,21 +84,19 @@ describe('AsyncStatusLogger', () => {
         })
 
         describe('messageFormatter', function() {
-            it('uses custom message formmater for status', function() {
-                const customFormatter = data => JSON.stringify(data)
-                const logger = new AsyncStatusLogger({color: null, messageFormatter: customFormatter})
+            it('uses custom message formatter for status', function() {
+                const logger = new AsyncStatusLogger({color: null, formatter: JSON.stringify})
                 
                 const output = this.grapStdOut(() => {
                     logger.status('status-1', "Test Status")        
                 })
                 logger.statusEndAll()
     
-                assert.deepEqual(output, ["{\"message\":\"Test Status\",\"time\":0}\n"])
+                assert.deepEqual(output, ['{"time":0,"args":["Test Status"]}' + "\n"])
             })
             
-            it('uses custom message formmater for end callback', function() {
-                const customFormatter = data => JSON.stringify(data)
-                const logger = new AsyncStatusLogger({color: null, messageFormatter: customFormatter})
+            it('uses custom message formatter for end callback', function() {
+                const logger = new AsyncStatusLogger({color: null, formatter: JSON.stringify})
                 
                 let statusEndArgs
                 
@@ -110,7 +108,20 @@ describe('AsyncStatusLogger', () => {
                 })
                 logger.statusEndAll()
     
-                assert.deepEqual(statusEndArgs, ["{\"message\":\"Test Status\",\"time\":0}"])
+                assert.deepEqual(statusEndArgs, ['{"time":0,"args":["Test Status"]}'])
+            })
+        })
+
+        describe('separator', function() {
+            it('should use custom separator for multiple arguments', function() {
+                const logger = new AsyncStatusLogger({color: null, separator: '::'})
+                
+                const output = this.grapStdOut(() => {
+                    logger.status('status-1', "Arg1", "Arg2", "Arg3")        
+                })
+                logger.statusEndAll()
+    
+                assert.deepEqual(output, ["Arg1::Arg2::Arg3\n"])
             })
         })
     })
@@ -126,6 +137,28 @@ describe('AsyncStatusLogger', () => {
                 logger.statusEndAll()
     
                 assert.deepEqual(output, ["Test Status\n"])
+            })
+
+            it('should add status with multiple arguments', function() {
+                const logger = new AsyncStatusLogger({color: null})
+                
+                const output = this.grapStdOut(() => {
+                    logger.status('status-1', "Arg1", "Arg2", "Arg3")        
+                })
+                logger.statusEndAll()
+    
+                assert.deepEqual(output, ["Arg1 Arg2 Arg3\n"])
+            })
+
+            it('should add status with some arguments as objects', function() {
+                const logger = new AsyncStatusLogger({color: null})
+                
+                const output = this.grapStdOut(() => {
+                    logger.status('status-1', "Arg1", {arg2: true}, "Arg3")        
+                })
+                logger.statusEndAll()
+    
+                assert.deepEqual(output, ["Arg1 {\n  \"arg2\": true\n} Arg3\n"])
             })
     
             it('should update time on status', function() {
@@ -266,7 +299,7 @@ describe('AsyncStatusLogger', () => {
     })
 
     describe('statusEnd', function() {
-        it('should call callback with last message', function() {
+        it('should call callback with previous arguments', function() {
             const logger = new AsyncStatusLogger({color: null})
 
             let statusEndArgs
@@ -274,7 +307,7 @@ describe('AsyncStatusLogger', () => {
             this.grapStdOut(() => {
                 logger.status('status-1', "Test Status")
                 this.clock.tick(1000 * 5)
-                logger.status('status-1', "Test Status Update")
+                logger.status('status-1', "Test Status", "Update")
                 this.clock.tick(1000 * 5)
                 logger.statusEnd('status-1', (...args) => statusEndArgs = args )              
             })
@@ -291,47 +324,13 @@ describe('AsyncStatusLogger', () => {
             this.grapStdOut(() => {
                 logger.status('status-1', "Test Status")
                 this.clock.tick(1000 * 5)
-                logger.status('status-1', "Test Status Update")
+                logger.status('status-1', "Test Status", "Update")
                 this.clock.tick(1000 * 5)
-                logger.statusEnd('status-1', 'Test Status Done', (...args) => statusEndArgs = args )              
+                logger.statusEnd('status-1', 'Test Status', "Done", (...args) => statusEndArgs = args )              
             })
             logger.statusEndAll()
 
             assert.deepEqual(statusEndArgs, ['Test Status Done (10 seconds)'])
-        })
-        
-        it('should call callback with original payload', function() {
-            const logger = new AsyncStatusLogger({color: null})
-
-            let statusEndArgs
-
-            this.grapStdOut(() => {
-                logger.status('status-1', "Test Status", {payload: true})
-                this.clock.tick(1000 * 5)
-                logger.status('status-1', "Test Status Update")
-                this.clock.tick(1000 * 5)
-                logger.statusEnd('status-1', 'Test Status Done', (...args) => statusEndArgs = args )              
-            })
-            logger.statusEndAll()
-
-            assert.deepEqual(statusEndArgs, ['Test Status Done (10 seconds)', {payload: true}])
-        })
-        
-        it('should call callback with provided payload', function() {
-            const logger = new AsyncStatusLogger({color: null})
-
-            let statusEndArgs
-
-            this.grapStdOut(() => {
-                logger.status('status-1', "Test Status", {payload: true})
-                this.clock.tick(1000 * 5)
-                logger.status('status-1', "Test Status Update")
-                this.clock.tick(1000 * 5)
-                logger.statusEnd('status-1', 'Test Status Done', {payload_new: true}, (...args) => statusEndArgs = args )              
-            })
-            logger.statusEndAll()
-
-            assert.deepEqual(statusEndArgs, ['Test Status Done (10 seconds)', {payload_new: true}])
         })
     })
 

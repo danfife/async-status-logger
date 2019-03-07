@@ -42,39 +42,39 @@ log.info('Starting up another client')
 - ``objects`` An object (such as your custom logger) or an array ofobjects to include as part of your proxied logger
 - ``options`` _(Optional)_ The status logger options
   - ``color`` The color to set status messages to. Uses [chalk](https://www.npmjs.com/package/chalk) package under the hood, so check there for valid colors and styles. Set to null or an empty string to disable default coloring.
-  - ``messageFormatter({message, payload, time})`` Allows you to override how the message is formatted. Provides an object containing the message, payload (if specified), and time in milliseconds 
+  - ``separator`` Full multiple arg logs, configure which value to use to separte. Defaults to " " (option only applicable for default formatter)
+  - ``formatter({args, time})`` Allows you to override how the message is formatted. Provides an object containing the args and time in milliseconds
 
 Returns a Proxy object that will forward methods to their respective
 objects. If conflicting methods, status logger method's take priority,
 afterwhich priority is determined based on the order of the objects array.
 
 ``` js
-asyncStatusLogger(logger1)  // single object
+asyncStatusLogger(logger)  // single object
 asyncStatusLogger([logger1, logger2])  // or array of objects
-asyncStatusLogger(logger1, {color: null})  // Configured without any coloring
+asyncStatusLogger(logger, {color: null})  // Configured without any coloring
+asyncStatusLogger(logger, {formatter: JSON.stringify})  // Logs status as a json string
 ```
 
 ### Status logger methods
 
 
-#### log.status(``name``, ``message`` [, ``payload``])
+#### log.status(``name``, ``...args``])
 
 - ``name`` A unique name for this status method, allowing us to update and eventually end the status message
-- ``message`` The message of the current status state
-- ``payload`` _(Optional)_ A payload object to display as well. If the payload doesn't change (e.g. displaying the original request params) you only have to log it the first time and it will persist through status messages
+- ``...args`` The message args of the current status state
 
 Will log or update the status message and append the current running time
 
 
 #### log.statusEnd(``name``, ``...args``)
 - ``name`` Unique name used while calling _log.status_
-- ``...args`` _(Optional)_ Allows for generating a final status message which you can then log permanently
-  - _(Optional)_ ``message``[, ``payload``]. If message is not set, will use the last _log.status_ message. If payload isn't set, it will use the lastest payload as described in _log.status_
-  - ``callback(message, payload)``: A callback function that will be passed the message and payload. The message will include the total time since the first status message of the specified 'name' was called.
+- ``...args`` _(Optional)_ Allows for generating a final status message which you can then log permanently. If note specified, the previous args will be used for the callback
+  - ``callback(message:String)``: A callback function that will be passed the status message
 
 ``` js
 log.status('some-unique-id', 'Some status message')
-// > Some status message (0 seconds)
+// > (0 seconds) Some status message
 
 // ...some time later
 

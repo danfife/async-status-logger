@@ -1,61 +1,18 @@
 'use strict;'
 
-const chalk = require('chalk')
-const winston= require('winston')
-const {formatMessage, singleKeyObject, uid} = require('./utils')
-
-const DEFAULT_COLOR = 'bold blue'
-const FORMATTER_KEYS = ['message', 'time', 'payload']
-const NOOP = v => v
-
-function colorToChalk(color) {
-    if (!color) return NOOP
-
-    const values = color.split(/\s+/)
-    let method = chalk
-    values.forEach(value => {
-        if (method[value]) method = method[value]
-    })
-    return method === chalk ? NOOP : method
-}
-
-function pick(obj, keys) {
-    const result = {}
-    keys.forEach(key => {
-        if (obj.hasOwnProperty(key)) result[key] = obj[key]
-    })
-    return result
-}
-
-function createLogger(level, printMessage) {
-    return winston.createLogger({
-        level: level,
-        levels: singleKeyObject(level, 0),
-        transports: [new winston.transports.Console({
-            format: winston.format.printf(printMessage)
-        })]
-    })
-}
+const {formatMessage, colorStrToChalkObj} = require('./utils')
 
 class AsyncStatusLogger {
-    constructor({messageFormatter = formatMessage, color = DEFAULT_COLOR} = {}) {
-        const toColor = colorToChalk(color)
-
-        const self = this
+    constructor({formatter = null, separator = ' ', color = 'bold blue'} = {}) {
         this._names = []
-        this._state = []
+        this._state = {}
         this._callbacks = []
         this._interval = null
         this._lineCount = 0
         this._now = null
         this._paused = false
-        this._level = uid('_asyncStatusLoggerLevel_')
-        this._messageFormatter = messageFormatter
-        this._logger = createLogger(this._level, data => {
-            const response = self._messageFormatter(pick(data, FORMATTER_KEYS))
-            self._lineCount += response.split("\n").length            
-            return toColor(response)
-        })
+        this._formatter = formatter || (({args, time}) => formatMessage(args, time, separator))
+        this._toColor = colorStrToChalkObj(color)
     }
 
     _pause() {
@@ -88,26 +45,31 @@ class AsyncStatusLogger {
     _rewriteStatus() {
         if (this._paused) return
         this._clearStatus()
+        
+        const self = this
         this._names.forEach(name => {
-            const args = this._state[name]
-            const payload = args.payload
-            const time = this._now - args.start
-            this._logger[this._level](args.message, {payload, time})
+            const state = self._state[name]
+            const args = state.args
+            const time = self._now - state.start
+            // eslint-disable-next-line no-debugger
+            debugger
+            const message = self._toColor(self._formatter({time, args}))
+            self._lineCount += message.split("\n").length          
+            process.stdout.write(`${message}\n`)
         })
     }
 
-    status(name, message, payload) {
+    status(name, ...args) {
         const self = this
         const now = Date.now()
 
         if (this._names.includes(name)) {
-            if (message) this._state[name].message = message
-            if (payload) this._state[name].payload = payload
+            this._state[name].args = args
             return            
         }
 
         this._names.push(name)
-        this._state[name] = { message, payload, start: now }
+        this._state[name] = { args, start: now }
 
         if (!this._interval) {
             this._interval = setInterval(updateStatus, 1000)
@@ -129,17 +91,12 @@ class AsyncStatusLogger {
         this._rewriteStatus()
 
         if (args.length && typeof args[args.length - 1] === 'function') {
-            const callback = args.pop()
             const state = this._state[name]
-            const message = args.length ? args[0] : state.message
             const time = this._now - state.start
-            
-            const finalMessage = this._messageFormatter({ message, time })
-            const callbackArgs = [finalMessage]
-            const payload = args.length > 1 ? args[1] : state.payload
-            if (payload) callbackArgs.push(payload)
-            
-            this._callbacks.push(() => callback(...callbackArgs))
+            const callback = args.pop()
+            const finalArgs = args.length ? args : state.args
+            const finalMessage = this._formatter({time, args: finalArgs})
+            this._callbacks.push(() => callback(finalMessage))
             this._playCallbacks()        
         }
     }
